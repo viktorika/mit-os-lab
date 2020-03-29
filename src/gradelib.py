@@ -325,7 +325,6 @@ class GDBClient(object):
             self.sock = None
             return
         self.__buf += data
-        print "data =",data
 
         while True:
             m = re.search(r"\$([^#]*)#[0-9a-zA-Z]{2}", self.__buf)
