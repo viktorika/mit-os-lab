@@ -47,9 +47,10 @@ SECTIONS
 		*(.data)
 	}
 
-	PROVIDE(edata = .);
+	/*PROVIDE(edata = .);*/
 
 	.bss : {
+		edata = .;
 		*(.bss)
 	}
 
