@@ -153,6 +153,7 @@ mem_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
+	envs = (struct Env *)boot_alloc(sizeof(struct Env) * NENV);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -176,7 +177,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-	boot_map_region(kern_pgdir, UPAGES, sizeof(struct PageInfo) * npages, PADDR(pages), PTE_W);
+	boot_map_region(kern_pgdir, UPAGES, sizeof(struct PageInfo) * npages, PADDR(pages), PTE_U | PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -185,6 +186,7 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+	boot_map_region(kern_pgdir, UENVS, sizeof(struct Env) * NENV, PADDR(envs), PTE_U | PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -552,8 +554,26 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
-
-	return 0;
+	unsigned cur_va = ROUNDDOWN((unsigned)va, PGSIZE);
+    unsigned end_va = ROUNDUP((unsigned)va + len, PGSIZE);
+	perm |= PTE_P;
+    while(cur_va < end_va){
+        //判页目录表项 
+        pde_t *pgdir = curenv->env_pgdir;
+        pde_t pgdir_entry = pgdir[PDX(cur_va)];
+        if(cur_va > ULIM || (pgdir_entry & perm) != perm)
+			goto memory_errors;
+        //判页表项
+        pte_t *pg_address = KADDR(PTE_ADDR(pgdir_entry));
+        pte_t pg_entry = pg_address[PTX(cur_va)];
+        if(cur_va > ULIM || (pg_entry & perm) != perm)
+            goto memory_errors;
+        cur_va += PGSIZE;
+    }
+    return 0;
+memory_errors:
+	user_mem_check_addr = (cur_va > (unsigned)va ? cur_va : (unsigned)va);
+	return -E_FAULT;
 }
 
 //
@@ -570,8 +590,8 @@ user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 		cprintf("[%08x] user_mem_check assertion failure for "
 			"va %08x\n", env->env_id, user_mem_check_addr);
 		env_destroy(env);	// may not return
-	}
-}
+			}
+		}
 
 
 // --------------------------------------------------------------
