@@ -13,3 +13,11 @@ Environment
 2.src是放的当前分支完成的操作系统源码
 
 3.事先得说明一下我改过GNUmakefile文件，如果没法编译，那应该是因为我指定了用于编译这个课程的gcc编译器而你没有这个编译器，还有一些其他文件我也改过，所以建议重新把resouce里的资源解压出来自己慢慢调试吧。
+
+## Recording
+
+lab1：https://blog.csdn.net/qq_34262582/article/details/103800156
+
+lab2：https://blog.csdn.net/qq_34262582/article/details/104900712
+
+lab3：https://blog.csdn.net/qq_34262582/article/details/105266620
