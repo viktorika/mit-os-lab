@@ -4,7 +4,7 @@
 Environment
 ----
 * OS:Ubuntu 18.04
-* Compiler: g++ 7.4.0
+* Compiler: gcc 4.8(注意，高版本从这个lab4开始不行)
 
 ## Usage
 
@@ -21,3 +21,5 @@ lab1：https://blog.csdn.net/qq_34262582/article/details/103800156
 lab2：https://blog.csdn.net/qq_34262582/article/details/104900712
 
 lab3：https://blog.csdn.net/qq_34262582/article/details/105266620
+
+lab4：https://blog.csdn.net/qq_34262582/article/details/105646166

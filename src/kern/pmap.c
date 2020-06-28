@@ -179,7 +179,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-	boot_map_region(kern_pgdir, UPAGES, sizeof(struct PageInfo) * npages, PADDR(pages), PTE_U | PTE_W);
+	boot_map_region(kern_pgdir, UPAGES, sizeof(struct PageInfo) * npages, PADDR(pages), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -190,6 +190,7 @@ mem_init(void)
 	// LAB 3: Your code here.
 	boot_map_region(kern_pgdir, UENVS, sizeof(struct Env) * NENV, PADDR(envs), PTE_U | PTE_W);
 
+	
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -264,7 +265,12 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+	int i;
+	for(i = 0; i < NCPU; ++i){
+		unsigned end = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+		unsigned start = end - KSTKSIZE;
+		boot_map_region(kern_pgdir, start, KSTKSIZE, PADDR(percpu_kstacks + i), PTE_W);
+	}	
 }
 
 // --------------------------------------------------------------
@@ -310,10 +316,11 @@ page_init(void)
 	// 空洞后一直到下一个可分配的物理内存之前都是不可用的
     // 这个地方我踩了好久，一开始不知道怎么辨别kernel这里有多少个地方被用了，结果看大神的直接把前面的都认为不可用才恍然大大悟
 	physaddr_t nextfree_paddr = PADDR((pde_t *)boot_alloc(0));
-	physaddr_t used_interval[2][2] = {{0, PGSIZE}, {IOPHYSMEM, nextfree_paddr}};
-	const int kUsed_interval_length = 2;
+	physaddr_t used_interval[3][2] = {{0, PGSIZE}, {MPENTRY_PADDR, MPENTRY_PADDR + PGSIZE}, {IOPHYSMEM, nextfree_paddr}};
+	const int kUsed_interval_length = 3;
 	int used_interval_pointer = 0;
-	for(int i = 0; i < npages; ++i){
+	int i;
+	for(i = 0; i < npages; ++i){
 		while(used_interval_pointer < kUsed_interval_length && used_interval[used_interval_pointer][1] <= page2pa(pages + i))
 			used_interval_pointer++;
 
@@ -442,7 +449,8 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	//记住要向上取整
 	unsigned length = (size + PGSIZE - 1) / PGSIZE;
 	//循环的时候要记住不能直接用物理地址来判定，因为物理地址容易越界返回值变会从0开始，然后无限循环
-	for(unsigned i = 0; i < length; ++i){
+	unsigned i;
+	for(i = 0; i < length; ++i){
 		//一页页来映射
 		//首先求页表项
 		pte_t *pg_entry = pgdir_walk(pgdir, (void *)cur_va, true);
@@ -596,7 +604,14 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	// 检查是否溢出MMIOLIM
+	size_t align_size = ROUNDUP(size, PGSIZE);
+	if(base + align_size > MMIOLIM)
+		panic("mmio_map_region: overflow MMIOLIM");
+	boot_map_region(kern_pgdir, base, align_size, pa, PTE_W|PTE_PCD|PTE_PWT);
+	uintptr_t result = base;
+	base += align_size;
+	return (void *)result;
 }
 
 static uintptr_t user_mem_check_addr;

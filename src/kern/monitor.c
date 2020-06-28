@@ -67,7 +67,8 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
         eip = *(unsigned int *)(ebp + 4);
         esp = ebp + 4;
         cprintf("ebp %08x eip %08x args", ebp, eip);
-        for(int i = 0; i < 5; ++i){
+		int i;
+        for(i = 0; i < 5; ++i){
             esp += 4;
             cprintf(" %08x", *(unsigned int *)esp);
         }   

@@ -120,7 +120,8 @@ env_init(void)
 	// Set up envs array
 	// LAB 3: Your code here.
 	// 链表顺序要以数组顺序，这里我们倒着插入
-	for(int i = NENV - 1; i >= 0; --i){
+	int i;
+	for(i = NENV - 1; i >= 0; --i){
 		envs[i].env_status = ENV_FREE;
 		envs[i].env_id = 0;
 		envs[i].env_link = env_free_list;
@@ -193,13 +194,12 @@ env_setup_vm(struct Env *e)
 	e->env_pgdir = (pde_t *)page2kva(p);
 	p->pp_ref = 1;
 	// UTOP以上照搬kern_pgdir，这个地方参考别人的
-	for(int i = PDX(UTOP); i < NPDENTRIES; ++i)
+	for(i = PDX(UTOP); i < NPDENTRIES; ++i)
 		e->env_pgdir[i] = kern_pgdir[i];
-
+	
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
-
 	return 0;
 }
 
@@ -260,6 +260,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+	e->env_tf.tf_eflags |= FL_IF;
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
@@ -547,6 +548,7 @@ env_run(struct Env *e)
 	curenv->env_runs++;
 	// 切换地址空间，恢复寄存器
 	lcr3(PADDR(curenv->env_pgdir));
+	unlock_kernel();
 	env_pop_tf(&curenv->env_tf);
 }
 
