@@ -29,9 +29,20 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
-
-	// sched_halt never returns
-	sched_halt();
+	int curenv_index = (curenv?(curenv - envs + 1):0);	
+	int offset;
+	for(offset = 0; offset < NENV; ++offset){
+		idle = envs + ((curenv_index + offset) % NENV);
+		if(idle && ENV_RUNNABLE == idle->env_status){
+			env_run(idle);
+			return;
+		}
+	}
+	if(curenv && ENV_RUNNING == curenv->env_status)
+		env_run(curenv);
+	else
+		// sched_halt never returns
+		sched_halt();
 }
 
 // Halt this CPU when there is nothing to do. Wait until the
@@ -41,7 +52,6 @@ void
 sched_halt(void)
 {
 	int i;
-
 	// For debugging and testing purposes, if there are no runnable
 	// environments in the system, then drop into the kernel monitor.
 	for (i = 0; i < NENV; i++) {
@@ -55,7 +65,6 @@ sched_halt(void)
 		while (1)
 			monitor(NULL);
 	}
-
 	// Mark that no environment is running on this CPU
 	curenv = NULL;
 	lcr3(PADDR(kern_pgdir));

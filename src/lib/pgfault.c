@@ -29,7 +29,12 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	if (_pgfault_handler == 0) {
 		// First time through!
 		// LAB 4: Your code here.
-		panic("set_pgfault_handler not implemented");
+		//第一次要分配页面给异常stack使用
+		if(sys_page_alloc(0, (void *)(UXSTACKTOP - PGSIZE), PTE_P|PTE_U|PTE_W) < 0)
+			panic("set_pgfault_handler: sys_page_alloc failed");
+		//然后设置一下入口为_pgfault_upcall
+		if(sys_env_set_pgfault_upcall(0, _pgfault_upcall) < 0)
+			panic("set_pgfault_handler: sys_env_set_pgfault_upcall failed");
 	}
 
 	// Save handler pointer for assembly to call.

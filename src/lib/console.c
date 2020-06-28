@@ -125,4 +125,3 @@ devcons_stat(struct Fd *fd, struct Stat *stat)
 	strcpy(stat->st_name, "<cons>");
 	return 0;
 }
-
