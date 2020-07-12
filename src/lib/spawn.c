@@ -301,6 +301,13 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	unsigned addr;
+	for(addr = UTEXT; addr < USTACKTOP; addr += PGSIZE){
+		int page_num = PGNUM(addr);
+		if((uvpd[PDX(addr)] & PTE_P) && ((uvpt[page_num] & (PTE_P | PTE_U | PTE_SHARE)) == (PTE_P | PTE_U | PTE_SHARE)))
+			if(sys_page_map(0, (void *)addr, child, (void *)addr, uvpt[page_num] & PTE_SYSCALL))
+				panic("copy_shared_pages: sys_page_map error\n");
+	}
 	return 0;
 }
 

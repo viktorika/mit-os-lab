@@ -224,8 +224,6 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
-	// Handle keyboard and serial interrupts.
-	// LAB 5: Your code here.
 	switch(tf->tf_trapno){
 		case T_BRKPT:
 			monitor(tf);
@@ -257,6 +255,12 @@ trap_dispatch(struct Trapframe *tf)
 			// IRQ line or other reasons. We don't care.
 			cprintf("Spurious interrupt on irq 7\n");
 			print_trapframe(tf);
+			break;
+		}
+		case IRQ_OFFSET + IRQ_KBD:{
+			// Handle keyboard and serial interrupts.
+			// LAB 5: Your code here.
+			serial_intr();
 			break;
 		}
 		default:

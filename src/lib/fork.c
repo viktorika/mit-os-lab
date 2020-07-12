@@ -65,7 +65,11 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 	// LAB 4: Your code here.
 	void *addr = (void *)(pn * PGSIZE);
-	if(uvpt[pn] & (PTE_W | PTE_COW)){
+	if(uvpt[pn] & PTE_SHARE){
+		if(sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL))
+			panic("duppage: sys_page_map pte_syscall error");
+	}
+	else if(uvpt[pn] & (PTE_W | PTE_COW)){
 		//如果是可写或者是copy-on-write
 		//先对子进程映射
 		if(sys_page_map(0, addr, envid, addr, PTE_COW|PTE_U|PTE_P))
@@ -114,7 +118,7 @@ fork(void)
 	else{
 		//父进程
 		unsigned addr;
-		for(addr = UTEXT; addr < USTACKTOP; addr+= PGSIZE){
+		for(addr = UTEXT; addr < USTACKTOP; addr += PGSIZE){
 			if((uvpd[PDX(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_U))
 				duppage(envid, PGNUM(addr));
 		}
